@@ -23,36 +23,42 @@ st.markdown("""
     }
 
     .small-note {
-        color: #555;
+        color: #111111;
         font-size: 0.95rem;
     }
 
     .calc-box {
         background: #f7f7f7;
-        border: 1px solid #dddddd;
+        border: 1px solid #d0d0d0;
         border-radius: 12px;
         padding: 14px 16px;
         margin-top: 8px;
         margin-bottom: 10px;
+        color: #111111 !important;
+    }
+
+    .calc-box * {
+        color: #111111 !important;
     }
 
     .result-line {
         font-size: 1.03rem;
         margin-bottom: 0.35rem;
+        color: #111111 !important;
     }
 
-    .section-title {
-        margin-top: 1.2rem;
-        margin-bottom: 0.4rem;
+    .dark-text {
+        color: #111111 !important;
     }
 
-    /* ajuda no uso em telas estreitas */
+    /* Permite rolagem horizontal em telas estreitas */
     [data-testid="stPlotlyChart"] {
-        overflow-x: auto;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
     }
 
     [data-testid="stPlotlyChart"] > div {
-        min-width: 980px;
+        min-width: 1040px;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -60,7 +66,7 @@ st.markdown("""
 # =========================================================
 # Constantes
 # =========================================================
-K = 9.9e9  # N m² / C²
+K = 9.9e9  # N·m²/C²
 
 # =========================================================
 # Funções auxiliares
@@ -83,7 +89,7 @@ def format_decimal_pt(value: float, digits: int = 3) -> str:
 
 def format_scientific_pt(value: float, digits: int = 3) -> str:
     """
-    Formata número em notação científica do tipo:
+    Formata número em notação científica:
     3,14 × 10²
     em vez de 3.14e2
     """
@@ -99,10 +105,9 @@ def format_scientific_pt(value: float, digits: int = 3) -> str:
     exponent = int(math.floor(math.log10(x)))
     mantissa = x / (10 ** exponent)
 
-    # Se o número está numa faixa confortável, usa decimal simples
+    # Usa decimal simples para faixa confortável
     if 1e-2 <= x < 1e4:
         s = f"{value:.{digits}f}".replace(".", ",")
-        # remove zeros à direita e vírgula sobrando
         s = s.rstrip("0").rstrip(",") if "," in s else s
         return s
 
@@ -111,9 +116,6 @@ def format_scientific_pt(value: float, digits: int = 3) -> str:
     return f"{sign}{mantissa_str} × 10{int_to_superscript(exponent)}"
 
 def format_charge_coulomb_from_micro(q_micro: float, digits: int = 3) -> str:
-    """
-    Recebe q em μC e devolve string em C.
-    """
     q_c = q_micro * 1e-6
     return f"{format_scientific_pt(q_c, digits)} C"
 
@@ -132,70 +134,16 @@ def potential_point_charge(q_micro: float, r: float) -> float:
             return math.inf
         elif q_c < 0:
             return -math.inf
-        else:
-            return 0.0
+        return 0.0
 
     return K * q_c / r
 
 def html_formula_line(text: str) -> str:
     return f'<div class="result-line">{text}</div>'
 
-def build_calc_section(
-    titulo: str,
-    indice: str,
-    x: float,
-    y: float,
-    q_micro: float,
-    r: float,
-    v: float
-):
-    """
-    Monta a explicação do cálculo de V1 ou V2.
-    """
-    st.markdown(f"## {titulo}")
-
-    st.markdown(
-        f"Potencial elétrico gerado pela carga puntiforme {indice} no ponto P."
-    )
-
-    st.markdown(
-        '<div class="calc-box">' +
-        html_formula_line(
-            f"<b>V<sub>{indice}</sub> = K · q<sub>{indice}</sub> / r<sub>{indice}</sub></b>"
-        ) +
-        html_formula_line(
-            f"sendo <b>K</b> a constante de Coulomb = {format_scientific_pt(K, 3)} N·m²/C²"
-        ) +
-        html_formula_line(
-            f"<b>q<sub>{indice}</sub></b> a carga da partícula {indice} = {format_charge_coulomb_from_micro(q_micro, 3)}"
-        ) +
-        html_formula_line(
-            f"<b>r<sub>{indice}</sub></b> a distância entre a partícula {indice} e o ponto P = "
-            f"√(x<sub>{indice}</sub>² + y<sub>{indice}</sub>²) = "
-            f"√(({format_decimal_pt(x, 2)})² + ({format_decimal_pt(y, 2)})²) = {format_decimal_pt(r, 3)} m"
-        ) +
-        "<br>" +
-        (
-            html_formula_line(
-                f"<b>V<sub>{indice}</sub> = "
-                f"{format_scientific_pt(K, 3)} · ({format_scientific_pt(q_micro * 1e-6, 3)}) / {format_decimal_pt(r, 3)}</b>"
-            ) +
-            html_formula_line(
-                f"<b>V<sub>{indice}</sub> = {format_scientific_pt(v, 3)} V</b>"
-            )
-            if r != 0 else
-            html_formula_line(
-                f"<b>Como r<sub>{indice}</sub> = 0, o potencial torna-se "
-                f"{'∞' if v > 0 else ('−∞' if v < 0 else '0')}.</b>"
-            )
-        ) +
-        '</div>',
-        unsafe_allow_html=True
-    )
-
 def finite_sum(a: float, b: float) -> float:
     """
-    Soma segura para casos de infinito.
+    Soma segura para caso de infinitos.
     """
     if math.isinf(a) and math.isinf(b):
         if a > 0 and b > 0:
@@ -212,23 +160,74 @@ def charge_color(q_micro: float) -> str:
         return "blue"
     return "black"
 
+def build_calc_section(
+    titulo: str,
+    indice: str,
+    x: float,
+    y: float,
+    q_micro: float,
+    r: float,
+    v: float
+):
+    st.markdown(f'<h2 class="dark-text">{titulo}</h2>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="dark-text">Potencial elétrico gerado pela carga puntiforme {indice} no ponto P.</div>',
+        unsafe_allow_html=True
+    )
+
+    conteudo = (
+        html_formula_line(
+            f"<b>V<sub>{indice}</sub> = K · q<sub>{indice}</sub> / r<sub>{indice}</sub></b>"
+        )
+        + html_formula_line(
+            f"sendo <b>K</b> a constante de Coulomb = {format_scientific_pt(K, 3)} N·m²/C²"
+        )
+        + html_formula_line(
+            f"<b>q<sub>{indice}</sub></b> a carga da partícula {indice} = {format_charge_coulomb_from_micro(q_micro, 3)}"
+        )
+        + html_formula_line(
+            f"<b>r<sub>{indice}</sub></b> a distância entre a partícula {indice} e o ponto P = "
+            f"√(x<sub>{indice}</sub>² + y<sub>{indice}</sub>²) = "
+            f"√(({format_decimal_pt(x, 2)})² + ({format_decimal_pt(y, 2)})²) = {format_decimal_pt(r, 3)} m"
+        )
+        + "<br>"
+    )
+
+    if r != 0:
+        conteudo += html_formula_line(
+            f"<b>V<sub>{indice}</sub> = "
+            f"{format_scientific_pt(K, 3)} · ({format_scientific_pt(q_micro * 1e-6, 3)}) / {format_decimal_pt(r, 3)}</b>"
+        )
+        conteudo += html_formula_line(
+            f"<b>V<sub>{indice}</sub> = {format_scientific_pt(v, 3)} V</b>"
+        )
+    else:
+        conteudo += html_formula_line(
+            f"<b>Como r<sub>{indice}</sub> = 0, o potencial torna-se "
+            f"{'∞' if v > 0 else ('−∞' if v < 0 else '0')}.</b>"
+        )
+
+    st.markdown(
+        f'<div class="calc-box">{conteudo}</div>',
+        unsafe_allow_html=True
+    )
+
 def build_potential_grid(x1, y1, q1_micro, x2, y2, q2_micro):
     """
     Gera malha de potencial para equipotenciais.
     """
-    xs = np.linspace(-15, 15, 240)
-    ys = np.linspace(-15, 15, 240)
+    xs = np.linspace(-15, 15, 260)
+    ys = np.linspace(-15, 15, 260)
     X, Y = np.meshgrid(xs, ys)
 
     eps = 0.20
 
-    r1 = np.sqrt((X - x1)**2 + (Y - y1)**2)
-    r2 = np.sqrt((X - x2)**2 + (Y - y2)**2)
+    r1 = np.sqrt((X - x1) ** 2 + (Y - y1) ** 2)
+    r2 = np.sqrt((X - x2) ** 2 + (Y - y2) ** 2)
 
     q1_c = q1_micro * 1e-6
     q2_c = q2_micro * 1e-6
 
-    # evita singularidade exatamente sobre as cargas
     with np.errstate(divide='ignore', invalid='ignore'):
         V = K * q1_c / r1 + K * q2_c / r2
 
@@ -248,19 +247,18 @@ def build_figure(x1, y1, q1_micro, x2, y2, q2_micro, v_total):
     fig = make_subplots(
         rows=1,
         cols=2,
-        column_widths=[0.78, 0.22],
+        column_widths=[0.80, 0.20],
         specs=[[{"type": "xy"}, {"type": "domain"}]],
-        horizontal_spacing=0.04
+        horizontal_spacing=0.03
     )
 
-    # Definição dos níveis de contorno
     finite_vals = V[np.isfinite(V)]
     if finite_vals.size > 0 and np.nanmax(np.abs(finite_vals)) > 0:
         vmax = float(np.nanpercentile(np.abs(finite_vals), 92))
-        if vmax == 0:
-            vmax = 1.0
+        vmax = max(vmax, 1.0)
         n_levels = 12
         step = (2 * vmax) / n_levels
+
         contour_trace = go.Contour(
             x=xs,
             y=ys,
@@ -283,13 +281,13 @@ def build_figure(x1, y1, q1_micro, x2, y2, q2_micro, v_total):
     fig.add_shape(
         type="line",
         x0=-15, x1=15, y0=0, y1=0,
-        line=dict(color="gray", width=1),
+        line=dict(color="#666666", width=1),
         row=1, col=1
     )
     fig.add_shape(
         type="line",
         x0=0, x1=0, y0=-15, y1=15,
-        line=dict(color="gray", width=1),
+        line=dict(color="#666666", width=1),
         row=1, col=1
     )
 
@@ -302,6 +300,7 @@ def build_figure(x1, y1, q1_micro, x2, y2, q2_micro, v_total):
             marker=dict(size=10, color="green", symbol="circle"),
             text=["P"],
             textposition="top center",
+            textfont=dict(color="#111111", size=14),
             name="P",
             hovertemplate="Ponto P<br>x = 0 m<br>y = 0 m<extra></extra>"
         ),
@@ -317,6 +316,7 @@ def build_figure(x1, y1, q1_micro, x2, y2, q2_micro, v_total):
             marker=dict(size=16, color=charge_color(q1_micro), symbol="circle"),
             text=["q₁"],
             textposition="top center",
+            textfont=dict(color="#111111", size=14),
             name="Carga 1",
             hovertemplate=(
                 f"Carga 1<br>x₁ = {x1:.2f} m<br>y₁ = {y1:.2f} m<br>"
@@ -335,6 +335,7 @@ def build_figure(x1, y1, q1_micro, x2, y2, q2_micro, v_total):
             marker=dict(size=16, color=charge_color(q2_micro), symbol="circle"),
             text=["q₂"],
             textposition="top center",
+            textfont=dict(color="#111111", size=14),
             name="Carga 2",
             hovertemplate=(
                 f"Carga 2<br>x₂ = {x2:.2f} m<br>y₂ = {y2:.2f} m<br>"
@@ -344,7 +345,7 @@ def build_figure(x1, y1, q1_micro, x2, y2, q2_micro, v_total):
         row=1, col=1
     )
 
-    # Box lateral (mesma figura, sem sobrepor o plano)
+    # Box lateral de resumo (sem sobrepor o plano cartesiano)
     resumo_html = (
         f"<b>Resumo</b><br>"
         f"q₁ = {format_decimal_pt(q1_micro, 2)} μC<br>"
@@ -353,21 +354,21 @@ def build_figure(x1, y1, q1_micro, x2, y2, q2_micro, v_total):
     )
 
     fig.add_annotation(
-        x=0.89,
+        x=0.90,
         y=0.92,
         xref="paper",
         yref="paper",
         text=resumo_html,
         showarrow=False,
         align="left",
-        bordercolor="black",
+        bordercolor="#222222",
         borderwidth=1,
         borderpad=8,
-        bgcolor="rgba(255,255,255,0.95)",
-        font=dict(size=14)
+        bgcolor="rgba(255,255,255,0.97)",
+        font=dict(size=14, color="#111111")
     )
 
-    # Layout do gráfico principal
+    # Aparência dos eixos - limite fixo entre -15 e 15 m
     fig.update_xaxes(
         title_text="x (m)",
         row=1, col=1,
@@ -375,25 +376,40 @@ def build_figure(x1, y1, q1_micro, x2, y2, q2_micro, v_total):
         dtick=5,
         zeroline=False,
         scaleanchor="y",
-        scaleratio=1
+        scaleratio=1,
+        fixedrange=True,
+        tickfont=dict(color="#111111", size=12),
+        title_font=dict(color="#111111", size=14),
+        showline=True,
+        linewidth=1,
+        linecolor="#444444",
+        mirror=False
     )
+
     fig.update_yaxes(
         title_text="y (m)",
         row=1, col=1,
         range=[-15, 15],
         dtick=5,
-        zeroline=False
+        zeroline=False,
+        fixedrange=True,
+        tickfont=dict(color="#111111", size=12),
+        title_font=dict(color="#111111", size=14),
+        showline=True,
+        linewidth=1,
+        linecolor="#444444",
+        mirror=False
     )
 
-    # Remove elementos visuais da "coluna" da direita
     fig.update_layout(
-        width=1100,
+        width=1080,
         height=650,
-        margin=dict(l=50, r=30, t=30, b=40),
+        margin=dict(l=55, r=25, t=30, b=45),
         showlegend=False,
-        dragmode="pan",
         paper_bgcolor="white",
-        plot_bgcolor="white"
+        plot_bgcolor="white",
+        font=dict(color="#111111"),
+        dragmode=False
     )
 
     return fig
@@ -422,15 +438,15 @@ param_col1, param_col2 = st.columns(2, gap="large")
 
 with param_col1:
     st.markdown("### Carga puntiforme 1")
-    x1 = st.slider("x₁ (m)", min_value=-10.0, max_value=10.0, value=-4.0, step=0.1)
-    y1 = st.slider("y₁ (m)", min_value=-10.0, max_value=10.0, value=3.0, step=0.1)
-    q1_micro = st.slider("q₁ (μC)", min_value=-10.0, max_value=10.0, value=5.0, step=0.1)
+    x1 = st.slider("Posição x₁ (m)", min_value=-10.0, max_value=10.0, value=-4.0, step=0.1)
+    y1 = st.slider("Posição y₁ (m)", min_value=-10.0, max_value=10.0, value=3.0, step=0.1)
+    q1_micro = st.slider("Carga q₁ (μC)", min_value=-10.0, max_value=10.0, value=5.0, step=0.1)
 
 with param_col2:
     st.markdown("### Carga puntiforme 2")
-    x2 = st.slider("x₂ (m)", min_value=-10.0, max_value=10.0, value=5.0, step=0.1)
-    y2 = st.slider("y₂ (m)", min_value=-10.0, max_value=10.0, value=4.0, step=0.1)
-    q2_micro = st.slider("q₂ (μC)", min_value=-10.0, max_value=10.0, value=-4.0, step=0.1)
+    x2 = st.slider("Posição x₂ (m)", min_value=-10.0, max_value=10.0, value=5.0, step=0.1)
+    y2 = st.slider("Posição y₂ (m)", min_value=-10.0, max_value=10.0, value=4.0, step=0.1)
+    q2_micro = st.slider("Carga q₂ (μC)", min_value=-10.0, max_value=10.0, value=-4.0, step=0.1)
 
 # =========================================================
 # Cálculos
@@ -447,7 +463,7 @@ Vp = finite_sum(V1, V2)
 # =========================================================
 st.markdown("## Imagem")
 st.markdown(
-    '<div class="small-note">Em celulares, você pode arrastar, ampliar ou deslocar a figura para visualizar melhor todos os elementos.</div>',
+    '<div class="small-note">Em celulares, você pode deslizar horizontalmente para visualizar toda a figura quando necessário.</div>',
     unsafe_allow_html=True
 )
 
@@ -458,14 +474,18 @@ st.plotly_chart(
     use_container_width=False,
     config={
         "displaylogo": False,
-        "scrollZoom": True,
         "responsive": False,
-        "modeBarButtonsToAdd": ["pan2d", "zoomIn2d", "zoomOut2d", "resetScale2d"]
+        "scrollZoom": False,
+        "doubleClick": False,
+        "modeBarButtonsToRemove": [
+            "zoom2d", "pan2d", "zoomIn2d", "zoomOut2d",
+            "autoScale2d", "resetScale2d", "lasso2d", "select2d"
+        ]
     }
 )
 
 # =========================================================
-# Seção V1
+# Potencial elétrico V1
 # =========================================================
 build_calc_section(
     titulo="Potencial elétrico V1",
@@ -478,7 +498,7 @@ build_calc_section(
 )
 
 # =========================================================
-# Seção V2
+# Potencial elétrico V2
 # =========================================================
 build_calc_section(
     titulo="Potencial elétrico V2",
@@ -491,24 +511,24 @@ build_calc_section(
 )
 
 # =========================================================
-# Potencial total no ponto P
+# Potencial elétrico no ponto P
 # =========================================================
-st.markdown("## Potencial elétrico no ponto P")
+st.markdown('<h2 class="dark-text">Potencial elétrico no ponto P</h2>', unsafe_allow_html=True)
 
 if math.isnan(Vp):
-    descricao_resultado = (
+    linha_resultado = (
         "A soma resulta em valor indefinido, pois há contribuições infinitas de sinais opostos no ponto P."
     )
 else:
-    descricao_resultado = f"<b>Vₚ = {format_scientific_pt(Vp, 3)} V</b>"
+    linha_resultado = f"<b>Vₚ = {format_scientific_pt(Vp, 3)} V</b>"
 
 st.markdown(
-    '<div class="calc-box">' +
-    html_formula_line("<b>Vₚ = V₁ + V₂</b>") +
-    html_formula_line(
+    '<div class="calc-box">'
+    + html_formula_line("<b>Vₚ = V₁ + V₂</b>")
+    + html_formula_line(
         f"<b>Vₚ = {format_scientific_pt(V1, 3)} + {format_scientific_pt(V2, 3)}</b>"
-    ) +
-    html_formula_line(descricao_resultado) +
-    '</div>',
+    )
+    + html_formula_line(linha_resultado)
+    + '</div>',
     unsafe_allow_html=True
 )
