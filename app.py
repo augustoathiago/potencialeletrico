@@ -72,10 +72,6 @@ st.markdown("""
         color: #111111 !important;
     }
 
-    .dark-text {
-        color: #111111 !important;
-    }
-
     /* Em telas estreitas, permite arrastar horizontalmente a área do gráfico */
     [data-testid="stPlotlyChart"] {
         overflow-x: auto !important;
@@ -102,9 +98,6 @@ def int_to_superscript(n: int) -> str:
     return str(n).translate(SUPERSCRIPT_MAP)
 
 def format_decimal_pt(value: float, digits: int = 3) -> str:
-    """
-    Formata decimal usando vírgula.
-    """
     if math.isinf(value):
         return "∞" if value > 0 else "−∞"
     if math.isnan(value):
@@ -130,7 +123,6 @@ def format_scientific_pt(value: float, digits: int = 3) -> str:
     exponent = int(math.floor(math.log10(x)))
     mantissa = x / (10 ** exponent)
 
-    # Usa decimal simples para uma faixa mais amigável
     if 1e-2 <= x < 1e4:
         s = f"{value:.{digits}f}".replace(".", ",")
         s = s.rstrip("0").rstrip(",") if "," in s else s
@@ -167,9 +159,6 @@ def html_formula_line(text: str) -> str:
     return f'<div class="result-line">{text}</div>'
 
 def finite_sum(a: float, b: float) -> float:
-    """
-    Soma segura para caso de infinitos.
-    """
     if math.isinf(a) and math.isinf(b):
         if a > 0 and b > 0:
             return math.inf
@@ -218,7 +207,7 @@ def build_calc_section(
             f"sendo <b>K</b> a constante de Coulomb = {format_scientific_pt(K, 3)} N·m²/C²"
         )
         + html_formula_line(
-            f"<b>q<sub>{indice}</sub></b> a carga da partícula {indice} = {format_charge_coulomb_from_micro(q_micro, 3)}"
+            f"<b>q<sub>{indice}</sub></b> a carga da partícula {indice} = {format_charge_coulomb_from_micro(q_micro, 3)} C"
         )
         + html_formula_line(
             f"<b>r<sub>{indice}</sub></b> a distância entre a partícula {indice} e o ponto P = "
@@ -326,7 +315,7 @@ def build_figure(x1, y1, q1_micro, x2, y2, q2_micro, v_total):
         row=1, col=1
     )
 
-    # Ponto P (origem)
+    # Ponto P
     fig.add_trace(
         go.Scatter(
             x=[0],
@@ -380,7 +369,7 @@ def build_figure(x1, y1, q1_micro, x2, y2, q2_micro, v_total):
         row=1, col=1
     )
 
-    # Box lateral de resumo (sem sobrepor o plano cartesiano)
+    # Box lateral de resumo
     resumo_html = (
         f"<b>Resumo</b><br>"
         f"q₁ = {format_decimal_pt(q1_micro, 2)} μC<br>"
@@ -403,8 +392,8 @@ def build_figure(x1, y1, q1_micro, x2, y2, q2_micro, v_total):
         font=dict(size=14, color="#111111")
     )
 
-    # Aparência dos eixos - abre inicialmente entre -15 e 15 m
-    # Agora sem fixedrange=True, para permitir zoom em celular
+    # Abre inicialmente entre -15 e 15 m
+    # dragmode="zoom" favorece interação de zoom
     fig.update_xaxes(
         title_text="x (m)",
         row=1, col=1,
@@ -417,8 +406,7 @@ def build_figure(x1, y1, q1_micro, x2, y2, q2_micro, v_total):
         title_font=dict(color="#111111", size=14),
         showline=True,
         linewidth=1,
-        linecolor="#444444",
-        mirror=False
+        linecolor="#444444"
     )
 
     fig.update_yaxes(
@@ -431,8 +419,7 @@ def build_figure(x1, y1, q1_micro, x2, y2, q2_micro, v_total):
         title_font=dict(color="#111111", size=14),
         showline=True,
         linewidth=1,
-        linecolor="#444444",
-        mirror=False
+        linecolor="#444444"
     )
 
     fig.update_layout(
@@ -443,7 +430,7 @@ def build_figure(x1, y1, q1_micro, x2, y2, q2_micro, v_total):
         paper_bgcolor="white",
         plot_bgcolor="white",
         font=dict(color="#111111"),
-        dragmode="pan"
+        dragmode="zoom"   # <- importante para favorecer zoom
     )
 
     return fig
@@ -497,7 +484,7 @@ Vp = finite_sum(V1, V2)
 # =========================================================
 st.markdown("## Imagem")
 st.markdown(
-    '<div class="small-note">Em celulares, você pode usar a pinça para dar zoom na figura. Se a tela for estreita, também é possível deslizar horizontalmente a área do gráfico para visualizar tudo.</div>',
+    '<div class="small-note">Em celulares, tente usar dois dedos (pinça) sobre a figura para dar zoom. Se a tela for estreita, também é possível deslizar horizontalmente a área do gráfico para visualizar tudo.</div>',
     unsafe_allow_html=True
 )
 
@@ -509,7 +496,7 @@ st.plotly_chart(
     config={
         "displaylogo": False,
         "responsive": False,
-        "scrollZoom": True,     # importante para zoom em celular / trackpad
+        "scrollZoom": True,   # <- importante para zoom por gesto / pinça
         "doubleClick": "reset",
         "modeBarButtonsToRemove": [
             "lasso2d",
