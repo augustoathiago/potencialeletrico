@@ -27,6 +27,31 @@ st.markdown("""
         font-size: 0.95rem;
     }
 
+    .section-header-card {
+        background: #ffffff;
+        border: 1px solid #d0d0d0;
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-top: 14px;
+        margin-bottom: 8px;
+        color: #111111 !important;
+    }
+
+    .section-header-title {
+        color: #111111 !important;
+        font-size: 1.45rem;
+        font-weight: 700;
+        margin-bottom: 0.35rem;
+        line-height: 1.2;
+    }
+
+    .section-header-desc {
+        color: #111111 !important;
+        font-size: 1rem;
+        line-height: 1.45;
+        margin: 0;
+    }
+
     .calc-box {
         background: #f7f7f7;
         border: 1px solid #d0d0d0;
@@ -51,7 +76,7 @@ st.markdown("""
         color: #111111 !important;
     }
 
-    /* Permite rolagem horizontal em telas estreitas */
+    /* Em telas estreitas, permite arrastar horizontalmente a área do gráfico */
     [data-testid="stPlotlyChart"] {
         overflow-x: auto !important;
         -webkit-overflow-scrolling: touch;
@@ -105,7 +130,7 @@ def format_scientific_pt(value: float, digits: int = 3) -> str:
     exponent = int(math.floor(math.log10(x)))
     mantissa = x / (10 ** exponent)
 
-    # Usa decimal simples para faixa confortável
+    # Usa decimal simples para uma faixa mais amigável
     if 1e-2 <= x < 1e4:
         s = f"{value:.{digits}f}".replace(".", ",")
         s = s.rstrip("0").rstrip(",") if "," in s else s
@@ -160,6 +185,17 @@ def charge_color(q_micro: float) -> str:
         return "blue"
     return "black"
 
+def section_header(title: str, description: str):
+    st.markdown(
+        f"""
+        <div class="section-header-card">
+            <div class="section-header-title">{title}</div>
+            <div class="section-header-desc">{description}</div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
 def build_calc_section(
     titulo: str,
     indice: str,
@@ -169,10 +205,9 @@ def build_calc_section(
     r: float,
     v: float
 ):
-    st.markdown(f'<h2 class="dark-text">{titulo}</h2>', unsafe_allow_html=True)
-    st.markdown(
-        f'<div class="dark-text">Potencial elétrico gerado pela carga puntiforme {indice} no ponto P.</div>',
-        unsafe_allow_html=True
+    section_header(
+        titulo,
+        f"Potencial elétrico gerado pela carga puntiforme {indice} no ponto P."
     )
 
     conteudo = (
@@ -368,7 +403,8 @@ def build_figure(x1, y1, q1_micro, x2, y2, q2_micro, v_total):
         font=dict(size=14, color="#111111")
     )
 
-    # Aparência dos eixos - limite fixo entre -15 e 15 m
+    # Aparência dos eixos - abre inicialmente entre -15 e 15 m
+    # Agora sem fixedrange=True, para permitir zoom em celular
     fig.update_xaxes(
         title_text="x (m)",
         row=1, col=1,
@@ -377,7 +413,6 @@ def build_figure(x1, y1, q1_micro, x2, y2, q2_micro, v_total):
         zeroline=False,
         scaleanchor="y",
         scaleratio=1,
-        fixedrange=True,
         tickfont=dict(color="#111111", size=12),
         title_font=dict(color="#111111", size=14),
         showline=True,
@@ -392,7 +427,6 @@ def build_figure(x1, y1, q1_micro, x2, y2, q2_micro, v_total):
         range=[-15, 15],
         dtick=5,
         zeroline=False,
-        fixedrange=True,
         tickfont=dict(color="#111111", size=12),
         title_font=dict(color="#111111", size=14),
         showline=True,
@@ -409,7 +443,7 @@ def build_figure(x1, y1, q1_micro, x2, y2, q2_micro, v_total):
         paper_bgcolor="white",
         plot_bgcolor="white",
         font=dict(color="#111111"),
-        dragmode=False
+        dragmode="pan"
     )
 
     return fig
@@ -463,7 +497,7 @@ Vp = finite_sum(V1, V2)
 # =========================================================
 st.markdown("## Imagem")
 st.markdown(
-    '<div class="small-note">Em celulares, você pode deslizar horizontalmente para visualizar toda a figura quando necessário.</div>',
+    '<div class="small-note">Em celulares, você pode usar a pinça para dar zoom na figura. Se a tela for estreita, também é possível deslizar horizontalmente a área do gráfico para visualizar tudo.</div>',
     unsafe_allow_html=True
 )
 
@@ -475,11 +509,12 @@ st.plotly_chart(
     config={
         "displaylogo": False,
         "responsive": False,
-        "scrollZoom": False,
-        "doubleClick": False,
+        "scrollZoom": True,     # importante para zoom em celular / trackpad
+        "doubleClick": "reset",
         "modeBarButtonsToRemove": [
-            "zoom2d", "pan2d", "zoomIn2d", "zoomOut2d",
-            "autoScale2d", "resetScale2d", "lasso2d", "select2d"
+            "lasso2d",
+            "select2d",
+            "autoScale2d"
         ]
     }
 )
@@ -513,7 +548,10 @@ build_calc_section(
 # =========================================================
 # Potencial elétrico no ponto P
 # =========================================================
-st.markdown('<h2 class="dark-text">Potencial elétrico no ponto P</h2>', unsafe_allow_html=True)
+section_header(
+    "Potencial elétrico no ponto P",
+    "Soma dos potenciais gerados pelas cargas puntiformes 1 e 2 no ponto P."
+)
 
 if math.isnan(Vp):
     linha_resultado = (
