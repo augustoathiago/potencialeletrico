@@ -87,7 +87,7 @@ st.markdown("""
 # =========================================================
 # Constantes
 # =========================================================
-K = 9.9e9  # N·m²/C²
+K = 9.0e9  # N·m²/C²
 
 # =========================================================
 # Funções auxiliares
@@ -207,7 +207,7 @@ def build_calc_section(
             f"sendo <b>K</b> a constante de Coulomb = {format_scientific_pt(K, 3)} N·m²/C²"
         )
         + html_formula_line(
-            f"<b>q<sub>{indice}</sub></b> a carga da partícula {indice} = {format_charge_coulomb_from_micro(q_micro, 3)} C"
+            f"<b>q<sub>{indice}</sub></b> a carga da partícula {indice} = {format_charge_coulomb_from_micro(q_micro, 3)}"
         )
         + html_formula_line(
             f"<b>r<sub>{indice}</sub></b> a distância entre a partícula {indice} e o ponto P = "
