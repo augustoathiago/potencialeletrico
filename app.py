@@ -484,7 +484,7 @@ Vp = finite_sum(V1, V2)
 # =========================================================
 st.markdown("## Imagem")
 st.markdown(
-    '<div class="small-note" color="#111111">Linhas contínuas representam superfícies equipotenciais. Segure o botão esquerdo do mouse e arraste para zoom em uma certa área. Clique duas vezes para restaurar a imagem.</div>',
+    '<div class="small-note" style="color: white;">Linhas contínuas representam superfícies equipotenciais. Segure o botão esquerdo do mouse e arraste para zoom em uma certa área. Clique duas vezes para restaurar a imagem.</div>',
     unsafe_allow_html=True
 )
 
